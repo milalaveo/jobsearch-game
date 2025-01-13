@@ -7,7 +7,7 @@
         const screenWidth = Graphics.boxWidth;
         const screenHeight = Graphics.boxHeight;
         const windowWidth = screenWidth / Math.min(enemies.length, 3); // Максимум 3 врага в ряду
-        const windowHeight = screenHeight / 2; // Верхняя половина экрана
+        const windowHeight = screenHeight / 1; // Верхняя половина экрана
 
         enemies.forEach((enemy, index) => {
             const sprite = new Sprite_Enemy(enemy);
