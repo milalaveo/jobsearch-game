@@ -1,23 +1,36 @@
+const ENEMY_HORIZONTAL_BG_PADDING = 82;
+const ENEMY_VERTICAL_BOTTOM_OFFSET = 120;
+
 (function() {
     // Добавляем рамки к врагам
     const _Spriteset_Battle_createEnemies = Spriteset_Battle.prototype.createEnemies;
     Spriteset_Battle.prototype.createEnemies = function() {
         this._enemySprites = [];
         const enemies = $gameTroop.members();
-        const screenWidth = Graphics.boxWidth;
-        const screenHeight = Graphics.boxHeight;
-        const windowWidth = screenWidth / Math.min(enemies.length, 3); // Максимум 3 врага в ряду
-        const windowHeight = screenHeight / 1; // Верхняя половина экрана
 
-        enemies.forEach((enemy, index) => {
+        enemies.forEach((enemy) => {
             const sprite = new Sprite_Enemy(enemy);
-            const row = Math.floor(index / 3); // Ограничиваем количество в одном ряду
-            const col = index % 3;
+            let isLoaded = false;
 
-            sprite.x = col * windowWidth + windowWidth / 2;
-            sprite.y = row * windowHeight + windowHeight / 2;
-            sprite.scale.x = 1; // Уменьшаем размер спрайта
-            sprite.scale.y = 1;
+            // Устанавливаем позицию в центр
+            sprite.x = Graphics.boxWidth / 2;
+            sprite.y = Graphics.boxHeight - ENEMY_VERTICAL_BOTTOM_OFFSET;
+
+            const originalUpdate = sprite.update;
+            sprite.update = function () {
+                originalUpdate.call(this);
+
+                if (isLoaded) return;
+
+                if (this.bitmap && this.bitmap.width > 0 && this.bitmap.height > 0) {
+                    isLoaded = true;
+                    this.setFrame(0, 0, this.bitmap.width, this.bitmap.height);
+
+                    const scaleX = (Graphics.boxWidth - ENEMY_HORIZONTAL_BG_PADDING * 2) / this.bitmap.width;
+                    const scaleY = (Graphics.boxHeight - ENEMY_VERTICAL_BOTTOM_OFFSET / 2) / this.bitmap.height;
+                    this.scale.set(scaleX, scaleY);
+                }
+            }
 
             this._enemySprites.push(sprite);
 
