@@ -1,5 +1,11 @@
-const ENEMY_HORIZONTAL_BG_PADDING = 82;
-const ENEMY_VERTICAL_BOTTOM_OFFSET = 120;
+const BOSS_ZOOM_WINDOW_OFFSET_TOP = 150;
+const BOSS_ZOOM_WINDOW_OFFSET_LEFT = -80;
+
+const ACTOR_ZOOM_WINDOW_OFFSET_BOTTOM = 121;
+const ACTOR_ZOOM_WINDOW_OFFSET_RIGHT = 521;
+
+const ACTOR_HP_WIDTH = 150;
+const ACTOR_HP_HEIGHT = 30;
 
 (function() {
     // Добавляем рамки к врагам
@@ -13,8 +19,8 @@ const ENEMY_VERTICAL_BOTTOM_OFFSET = 120;
             let isLoaded = false;
 
             // Устанавливаем позицию в центр
-            sprite.x = Graphics.boxWidth / 2;
-            sprite.y = Graphics.boxHeight - ENEMY_VERTICAL_BOTTOM_OFFSET;
+            sprite.x = Graphics.boxWidth / 2 + BOSS_ZOOM_WINDOW_OFFSET_LEFT;
+            sprite.y = Graphics.boxHeight / 2 + BOSS_ZOOM_WINDOW_OFFSET_TOP;
 
             const originalUpdate = sprite.update;
             sprite.update = function () {
@@ -24,11 +30,7 @@ const ENEMY_VERTICAL_BOTTOM_OFFSET = 120;
 
                 if (this.bitmap && this.bitmap.width > 0 && this.bitmap.height > 0) {
                     isLoaded = true;
-                    this.setFrame(0, 0, this.bitmap.width, this.bitmap.height);
-
-                    const scaleX = (Graphics.boxWidth - ENEMY_HORIZONTAL_BG_PADDING * 2) / this.bitmap.width;
-                    const scaleY = (Graphics.boxHeight - ENEMY_VERTICAL_BOTTOM_OFFSET / 2) / this.bitmap.height;
-                    this.scale.set(scaleX, scaleY);
+                    // добавление плашек и прочего
                 }
             }
 
@@ -42,20 +44,40 @@ const ENEMY_VERTICAL_BOTTOM_OFFSET = 120;
     const _Spriteset_Battle_createActors = Spriteset_Battle.prototype.createActors;
     Spriteset_Battle.prototype.createActors = function() {
         this._actorSprites = [];
+        this._hpSprites = []; // Очищаем массив перед созданием
         const screenWidth = Graphics.boxWidth;
         const screenHeight = Graphics.boxHeight;
 
         $gameParty.members().forEach((actor, index) => {
             const sprite = new Sprite_Actor(actor);
+            let isLoaded = false;
 
             // Расположим героя в нижнем правом углу
-            sprite.x = screenWidth - 150 * (index + 1); // Отступ от правого края
-            sprite.y = screenHeight - 150; // Отступ от нижнего края
-            sprite.scale.x = 1; // Уменьшаем размер окна
-            sprite.scale.y = 1;
+            sprite.x = screenWidth - ACTOR_ZOOM_WINDOW_OFFSET_RIGHT * (index + 1); // Отступ от правого края
+            sprite.y = screenHeight - ACTOR_ZOOM_WINDOW_OFFSET_BOTTOM; // Отступ от нижнего края
+
+            // Создаём спрайт для здоровья
+            const hpSprite = new Sprite(new Bitmap(ACTOR_HP_WIDTH, ACTOR_HP_HEIGHT));
+            hpSprite.bitmap.fontSize = 30;
+            hpSprite.x = sprite.x - ACTOR_HP_HEIGHT;
+            hpSprite.y = sprite.y - ACTOR_HP_WIDTH;
+
+            const originalUpdate = sprite.update;
+            sprite.update = function () {
+                originalUpdate.call(this);
+
+                if (isLoaded) return;
+
+                if (this.bitmap && this.bitmap.width > 0 && this.bitmap.height > 0) {
+                    isLoaded = true;
+                    // добавление плашек и прочего
+                }
+            }
 
             this._actorSprites.push(sprite);
             this._battleField.addChild(sprite);
+            this._hpSprites.push({ sprite: hpSprite, actor: actor }); // Храним спрайт и героя
+            this._battleField.addChild(hpSprite);
         });
     };
 
@@ -67,9 +89,33 @@ const ENEMY_VERTICAL_BOTTOM_OFFSET = 120;
         this._battleField.y = 0;
     };
 
+    // Массив для хранения спрайтов здоровья
+    Spriteset_Battle.prototype._hpSprites = [];
+
     // Блокируем стандартное позиционирование спрайтов
     const _Sprite_Battler_updatePosition = Sprite_Battler.prototype.updatePosition;
     Sprite_Battler.prototype.updatePosition = function() {
         // Отключаем стандартное позиционирование
+    };
+
+    // Метод для обновления всех спрайтов здоровья
+    Spriteset_Battle.prototype.updateHealthSprites = function() {
+        this._hpSprites.forEach(entry => {
+            const { sprite, actor } = entry;
+            const hpText = `${actor.hp}/${actor.mhp}`;
+            sprite.bitmap.clear(); // Очищаем предыдущее значение
+            sprite.bitmap.drawText(hpText, 0, 0, ACTOR_HP_WIDTH, ACTOR_HP_HEIGHT, 'right');
+        });
+    };
+
+    // Вызываем обновление здоровья в нужных местах
+    const _Window_BattleStatus_drawItem = Window_BattleStatus.prototype.drawItem;
+    Window_BattleStatus.prototype.drawItem = function(index) {
+        _Window_BattleStatus_drawItem.call(this, index);
+
+        // Обновляем спрайты здоровья при вызове drawItem
+        if (SceneManager._scene._spriteset) {
+            SceneManager._scene._spriteset.updateHealthSprites();
+        }
     };
 })();
