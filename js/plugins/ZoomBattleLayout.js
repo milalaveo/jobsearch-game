@@ -36,7 +36,7 @@
             const sprite = new Sprite_Actor(actor);
 
             // Расположим героя в нижнем правом углу
-            sprite.x = screenWidth - 150 * index; // Отступ от правого края
+            sprite.x = screenWidth - 150 * (index + 1); // Отступ от правого края
             sprite.y = screenHeight - 150; // Отступ от нижнего края
             sprite.scale.x = 1; // Уменьшаем размер окна
             sprite.scale.y = 1;
