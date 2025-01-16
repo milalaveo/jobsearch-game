@@ -6,6 +6,27 @@ const ACTOR_HP_HEIGHT = 30;
 
 const OVERLAY_HEIGHT = 50;
 
+function EmptyStatusWindow() {
+    this.initialize(...arguments);
+}
+
+EmptyStatusWindow.prototype = Object.create(Window_Base.prototype);
+EmptyStatusWindow.prototype.constructor = EmptyStatusWindow;
+
+// Пустая инициализация
+EmptyStatusWindow.prototype.initialize = function(rect) {
+    Window_Base.prototype.initialize.call(this, rect);
+    this.hide(); // Скрываем окно
+};
+
+// Отключаем все методы рисования
+EmptyStatusWindow.prototype.refresh = function() {};
+EmptyStatusWindow.prototype.drawItem = function() {};
+EmptyStatusWindow.prototype.update = function() {};
+EmptyStatusWindow.prototype.select = function() {};
+EmptyStatusWindow.prototype.deselect = function() {};
+
+
 class BossInterface extends Sprite_Enemy {
     constructor(enemy) {
         super(enemy);
@@ -321,5 +342,22 @@ class ActorInterface extends Sprite_Actor {
         Window_Command.prototype.initialize.call(this, 0, 15);
         this.openness = 0;
         this.deactivate();
+    };
+
+    Window_ActorCommand.prototype.initialize = function() {
+        Window_Command.prototype.initialize.call(this, 0, 15);
+        this.openness = 0;
+        this.deactivate();
+        this._actor = null;
+    }
+
+    Scene_Battle.prototype.createStatusWindow = function() {
+        this._statusWindow = new EmptyStatusWindow(); // Используем заглушку
+        this.addWindow(this._statusWindow);
+    };
+
+    Scene_Battle.prototype.commandAttack = function() {
+        BattleManager.inputtingAction().setAttack();
+        this.onEnemyOk();
     };
 })();
