@@ -6,65 +6,263 @@ const ACTOR_HP_HEIGHT = 30;
 
 const OVERLAY_HEIGHT = 50;
 
-(function() {
-    const generateBossStatusBar = function(width) {
-        const bossStatusSprite = new Sprite(new Bitmap(width, 50)); // Размер плашки
-        bossStatusSprite.x = 10; // Позиция X
-        bossStatusSprite.y = 10; // Позиция Y
-        bossStatusSprite.bitmap.fontSize = 20; // Размер шрифта
-
-        return bossStatusSprite;
+class BossInterface extends Sprite_Enemy {
+    constructor(enemy) {
+        super(enemy);
     }
 
-    // Добавляем рамки к врагам
+    initialize(battler) {
+        super.initialize(battler);
+        this.createBossImage();
+        this.createStatusBar();
+    }
+
+    get width() {
+        return 1380;
+    }
+
+    get height() {
+        return 980;
+    }
+
+    get frameWidth() {
+        return 15;
+    }
+
+    get frameHeader() {
+        return 64;
+    }
+
+    get statusBarHeight() {
+        return 78;
+    }
+
+    loadBitmap() {
+        this.bitmap = new Bitmap(this.width, this.height);
+
+        // Рисуем синий фон и белую рамку
+        this.bitmap.fillRect(0, 0, this.width, this.height, '#002F72');
+        this.bitmap.textColor = '#1A40D6';
+        this.bitmap.outlineWidth = 0;
+
+        // Добавляем заголовок "Zoom"
+        this.bitmap.fontSize = 48;
+        this.bitmap.textColor = '#FFFFFF';
+        this.bitmap.drawText('Zoom', this.frameWidth, 0, 200, this.frameHeader, 'left');
+        this.anchor.set(0, 0);
+    }
+
+    // Создаём изображение босса
+    createBossImage() {
+        const bitmap = ImageManager.loadSvEnemy(this._enemy.battlerName());
+
+        this._bossImage = new Sprite(bitmap); // Загрузка изображения босса
+        this._bossImage.x = this.frameWidth;
+        this._bossImage.y = this.frameHeader;
+
+        // Добавляем изображение как дочерний спрайт
+        this.addChild(this._bossImage);
+    }
+
+    createStatusBar() {
+        const statusBarBitmap = new Bitmap(this.width - this.frameWidth * 2, this.statusBarHeight);
+
+        // Рисуем полупрозрачный фон
+        statusBarBitmap.paintOpacity = 185;
+        statusBarBitmap.fillRect(0, 0, this.width - this.frameWidth * 2, this.statusBarHeight, '#000000'); // Чёрный фон
+        statusBarBitmap.paintOpacity = 255;
+
+        // Настраиваем шрифт для статуса имени босса
+        statusBarBitmap.fontSize = 64;
+        statusBarBitmap.textColor = '#FFFFFF'; // Белый текст
+        statusBarBitmap.outlineColor = 'rgba(0, 0, 0, 0)'; // Убираем обводку
+        statusBarBitmap.outlineWidth = 0; // Убираем ширину обводки
+        statusBarBitmap.drawText(this._enemy.name(), 10, 0, 200, this.statusBarHeight, 'left'); // Имя босса
+
+        // Создаём статусбар как фоновый спрайт
+        this._statusBar = new Sprite(statusBarBitmap);
+        this._statusBar.x = this.frameWidth;
+        this._statusBar.y = this.height - this.statusBarHeight - this.frameWidth; // Располагаем статусбар внизу рамки
+        this.addChild(this._statusBar);
+
+        // Создаём отдельный спрайт для текста здоровья
+        this._hpTextSprite = new Sprite(new Bitmap(200, this.statusBarHeight)); // Задаём размеры под текст здоровья
+        this._hpTextSprite.bitmap.fontSize = 64; // Размер шрифта
+        this._hpTextSprite.bitmap.textColor = '#FFFFFF'; // Цвет текста
+        this._hpTextSprite.bitmap.outlineColor = 'rgba(0, 0, 0, 0)'; // Убираем обводку
+        this._hpTextSprite.bitmap.outlineWidth = 0; // Убираем ширину обводки
+
+        // Расположение текста здоровья
+        this._hpTextSprite.x = this.width / 2 - 200; // Отступ от правого края статусбара
+        this._hpTextSprite.y = 0; // Сместить ниже внутри статусбара
+
+        this._statusBar.addChild(this._hpTextSprite);
+
+        // Инициализируем текст здоровья
+        this.updateHealthText();
+    }
+
+    updateHealthText() {
+        const bitmap = this._hpTextSprite.bitmap;
+        bitmap.clear(); // Очищаем только область текста здоровья
+        const hpText = `${this._enemy.hp}/${this._enemy.mhp}`;
+        bitmap.drawText(hpText, 0, 0, 200, this.statusBarHeight, 'right'); // Рисуем здоровье
+    }
+
+    updateBitmap() {
+        super.updateBitmap();
+        if (this._bossImage && this.bitmap && this.bitmap.width && this.bitmap.height) {
+            // Размеры рамки
+            const frameWidth = this.width - this.frameWidth * 2;
+            const frameHeight = this.height - this.frameWidth - this.frameHeader;
+
+            const scaleX = frameWidth / this.bitmap.width;
+            const scaleY = frameHeight / this.bitmap.height;
+
+            // Применяем масштабирование
+            this._bossImage.scale.x = scaleX;
+            this._bossImage.scale.y = scaleY;
+        }
+    }
+
+    update() {
+        super.update();
+        this.updateHealthText();
+    }
+}
+
+class ActorInterface extends Sprite_Actor {
+    constructor(actor) {
+        super(actor);
+    }
+
+    initialize(battler) {
+        super.initialize(battler);
+        // this.createActorImage();
+        this.createFrame();
+        this.createStatusBar();
+    }
+
+    get width() {
+        return 550;
+    }
+
+    get height() {
+        return 374;
+    }
+
+    get frameWidth() {
+        return 1;
+    }
+
+    get statusBarHeight() {
+        return 78;
+    }
+
+    createFrame() {
+        const bitmap = new Bitmap(this.width, this.height);
+
+        bitmap.fillRect(0, 0, this.width, this.height, '#002F72');
+
+        this.anchor.set(0, 0);
+
+        this.bitmap = bitmap;
+    }
+
+    createMainSprite() {
+        super.createMainSprite();
+
+        this._mainSprite.x = this.frameWidth;
+        this._mainSprite.y = this.frameWidth;
+        this._mainSprite.anchor.set(0, 0);
+    }
+
+    createStatusBar() {
+        const statusBarBitmap = new Bitmap(this.width - this.frameWidth * 2, this.statusBarHeight);
+
+        // Рисуем полупрозрачный фон
+        statusBarBitmap.paintOpacity = 185;
+        statusBarBitmap.fillRect(0, 0, this.width - this.frameWidth * 2, this.statusBarHeight, '#000000'); // Чёрный фон
+        statusBarBitmap.paintOpacity = 255;
+
+        // Настраиваем шрифт для статуса имени босса
+        statusBarBitmap.fontSize = 64;
+        statusBarBitmap.textColor = '#FFFFFF'; // Белый текст
+        statusBarBitmap.outlineColor = 'rgba(0, 0, 0, 0)'; // Убираем обводку
+        statusBarBitmap.outlineWidth = 0; // Убираем ширину обводки
+        statusBarBitmap.drawText('You', 10, 0, 200, this.statusBarHeight, 'left'); // Имя босса
+
+        // Создаём статусбар как фоновый спрайт
+        this._statusBar = new Sprite(statusBarBitmap);
+        this._statusBar.x = this.frameWidth;
+        this._statusBar.y = this.frameWidth; // Располагаем статусбар внизу рамки
+        this.addChild(this._statusBar);
+
+        // Создаём отдельный спрайт для текста здоровья
+        this._hpTextSprite = new Sprite(new Bitmap(this.width - this.frameWidth * 2, this.statusBarHeight)); // Задаём размеры под текст здоровья
+        this._hpTextSprite.bitmap.fontSize = 64; // Размер шрифта
+        this._hpTextSprite.bitmap.textColor = '#FFFFFF'; // Цвет текста
+        this._hpTextSprite.bitmap.outlineColor = 'rgba(0, 0, 0, 0)'; // Убираем обводку
+        this._hpTextSprite.bitmap.outlineWidth = 0; // Убираем ширину обводки
+
+        // Расположение текста здоровья
+        this._hpTextSprite.x = -10; // Отступ от правого края статусбара
+        this._hpTextSprite.y = 0; // Сместить ниже внутри статусбара
+
+        this._statusBar.addChild(this._hpTextSprite);
+
+        // Инициализируем текст здоровья
+        this.updateHealthText();
+    }
+
+    updateBitmap() {
+        // Sprite_Battler.prototype.updateBitmap.call(this);
+        super.updateBitmap();
+
+        if (this._mainSprite && this._mainSprite.bitmap && this._mainSprite.bitmap.width && this._mainSprite.bitmap.height) {
+            // Размеры рамки
+            const frameWidth = this.width - this.frameWidth * 2;
+            const frameHeight = this.height - this.frameWidth * 2;
+
+            const scaleX = frameWidth / this._mainSprite.bitmap.width;
+            const scaleY = frameHeight / this._mainSprite.bitmap.height;
+
+            // Применяем масштабирование
+            this._mainSprite.scale.x = scaleX * 9; // since it's animation
+            this._mainSprite.scale.y = scaleY * 6;
+        }
+    }
+
+    updateHealthText() {
+        const bitmap = this._hpTextSprite.bitmap;
+        bitmap.clear(); // Очищаем только область текста здоровья
+        const hpText = `${this._actor.hp}/${this._actor.mhp}`;
+        bitmap.drawText(hpText, 0, 0, this.width - this.frameWidth * 2, this.statusBarHeight, 'right'); // Рисуем здоровье
+    }
+
+    update() {
+        super.update();
+        this.updateHealthText();
+    }
+
+    // updateFrame() {
+    //     Sprite_Battler.prototype.updateFrame.call(this);
+    // }
+}
+
+(function() {
     const _Spriteset_Battle_createEnemies = Spriteset_Battle.prototype.createEnemies;
     Spriteset_Battle.prototype.createEnemies = function() {
         this._enemySprites = [];
         const enemies = $gameTroop.members();
 
         enemies.forEach((enemy) => {
-            const sprite = new Sprite_Enemy(enemy);
-            let isLoaded = false;
+            const sprite = new BossInterface(enemy);
 
-            const originalUpdate = sprite.update;
-            const self = this;
-            sprite.update = function () {
-                originalUpdate.call(this);
-
-                if (isLoaded) return;
-
-                if (this.bitmap && this.bitmap.width > 0 && this.bitmap.height > 0) {
-                    isLoaded = true;
-                    // добавление плашек и прочего
-                    this.x = Graphics.boxWidth - this.bitmap.width / 2 - OVERLAY_HEIGHT;
-                    this.y = this.bitmap.height + OVERLAY_HEIGHT;
-                    const overlayBitmap = new Bitmap(this.bitmap.width, OVERLAY_HEIGHT);
-                    const overlaySprite = new Sprite(overlayBitmap); // Спрайт для наложения
-
-                    overlayBitmap.fontSize = 62;
-                    overlaySprite.x = -this.bitmap.width / 2;
-                    overlaySprite.y = -OVERLAY_HEIGHT;
-
-                    const updateEnemyOverlay = () => {
-                        const hpText = `${enemy.hp}/${enemy.mhp}`;
-                        overlayBitmap.clear(); // Очищаем предыдущее значение
-                        overlayBitmap.paintOpacity = 185; // Устанавливаем прозрачность (72%)
-                        overlayBitmap.fillRect(0, 0, this.bitmap.width, OVERLAY_HEIGHT, '#000000');
-                        overlayBitmap.paintOpacity = 255; // Возвращаем непрозрачность для содержимого
-                        overlayBitmap.drawText(enemy.name(), 0, 0, this.bitmap.width / 2, 50, 'left');
-                        overlayBitmap.drawText(hpText, 0, 0, this.bitmap.width / 2, 50, 'right');
-                    }
-
-                    updateEnemyOverlay();
-
-                    self._hpSprites.push(updateEnemyOverlay); // Храним спрайт и героя
-
-                    this.addChild(overlaySprite);
-                }
-            }
+            sprite.x = Graphics.width - sprite.width - OVERLAY_HEIGHT + 15;
+            sprite.y = OVERLAY_HEIGHT + 15;
 
             this._enemySprites.push(sprite);
-
             this._battleField.addChild(sprite);
         });
     };
@@ -73,43 +271,16 @@ const OVERLAY_HEIGHT = 50;
     const _Spriteset_Battle_createActors = Spriteset_Battle.prototype.createActors;
     Spriteset_Battle.prototype.createActors = function() {
         this._actorSprites = [];
-        const screenWidth = Graphics.boxWidth;
-        const screenHeight = Graphics.boxHeight;
 
         $gameParty.members().forEach((actor, index) => {
-            const sprite = new Sprite_Actor(actor);
-            let isLoaded = false;
+            const sprite = new ActorInterface(actor);
 
             // Расположим героя в нижнем правом углу
-            sprite.x = screenWidth - ACTOR_ZOOM_WINDOW_OFFSET_RIGHT * (index + 1); // Отступ от правого края
-            sprite.y = screenHeight - ACTOR_ZOOM_WINDOW_OFFSET_BOTTOM; // Отступ от нижнего края
-
-            // Создаём спрайт для здоровья
-            const hpSprite = new Sprite(new Bitmap(ACTOR_HP_WIDTH, ACTOR_HP_HEIGHT));
-            hpSprite.bitmap.fontSize = 30;
-            hpSprite.x = sprite.x - ACTOR_HP_HEIGHT;
-            hpSprite.y = sprite.y - ACTOR_HP_WIDTH;
-
-            const originalUpdate = sprite.update;
-            sprite.update = function () {
-                originalUpdate.call(this);
-
-                if (isLoaded) return;
-
-                if (this.bitmap && this.bitmap.width > 0 && this.bitmap.height > 0) {
-                    isLoaded = true;
-                    // добавление плашек и прочего
-                }
-            }
+            sprite.x = Graphics.boxWidth - (sprite.width + 50) * (index + 1); // Отступ от правого края
+            sprite.y = Graphics.boxHeight - sprite.height - 50; // Отступ от нижнего края
 
             this._actorSprites.push(sprite);
             this._battleField.addChild(sprite);
-            this._hpSprites.push(() => {
-                const hpText = `${actor.hp}/${actor.mhp}`;
-                hpSprite.bitmap.clear(); // Очищаем предыдущее значение
-                hpSprite.bitmap.drawText(hpText, 0, 0, ACTOR_HP_WIDTH, ACTOR_HP_HEIGHT, 'right');
-            }); // Храним спрайт и героя
-            this._battleField.addChild(hpSprite);
         });
     };
 
