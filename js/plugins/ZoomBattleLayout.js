@@ -1,9 +1,3 @@
-const ACTOR_ZOOM_WINDOW_OFFSET_BOTTOM = 121;
-const ACTOR_ZOOM_WINDOW_OFFSET_RIGHT = 521;
-
-const ACTOR_HP_WIDTH = 150;
-const ACTOR_HP_HEIGHT = 30;
-
 const OVERLAY_HEIGHT = 50;
 
 function EmptyStatusWindow() {
@@ -172,7 +166,7 @@ class ActorInterface extends Sprite_Actor {
         return 374;
     }
 
-    get frameWidth() {
+    get frameThickness() {
         return 1;
     }
 
@@ -193,17 +187,17 @@ class ActorInterface extends Sprite_Actor {
     createMainSprite() {
         super.createMainSprite();
 
-        this._mainSprite.x = this.frameWidth;
-        this._mainSprite.y = this.frameWidth;
+        this._mainSprite.x = this.frameThickness;
+        this._mainSprite.y = this.frameThickness;
         this._mainSprite.anchor.set(0, 0);
     }
 
     createStatusBar() {
-        const statusBarBitmap = new Bitmap(this.width - this.frameWidth * 2, this.statusBarHeight);
+        const statusBarBitmap = new Bitmap(this.width - this.frameThickness * 2, this.statusBarHeight);
 
         // Рисуем полупрозрачный фон
         statusBarBitmap.paintOpacity = 185;
-        statusBarBitmap.fillRect(0, 0, this.width - this.frameWidth * 2, this.statusBarHeight, '#000000'); // Чёрный фон
+        statusBarBitmap.fillRect(0, 0, this.width - this.frameThickness * 2, this.statusBarHeight, '#000000'); // Чёрный фон
         statusBarBitmap.paintOpacity = 255;
 
         // Настраиваем шрифт для статуса имени босса
@@ -215,12 +209,12 @@ class ActorInterface extends Sprite_Actor {
 
         // Создаём статусбар как фоновый спрайт
         this._statusBar = new Sprite(statusBarBitmap);
-        this._statusBar.x = this.frameWidth;
-        this._statusBar.y = this.frameWidth; // Располагаем статусбар внизу рамки
+        this._statusBar.x = this.frameThickness;
+        this._statusBar.y = this.frameThickness; // Располагаем статусбар внизу рамки
         this.addChild(this._statusBar);
 
         // Создаём отдельный спрайт для текста здоровья
-        this._hpTextSprite = new Sprite(new Bitmap(this.width - this.frameWidth * 2, this.statusBarHeight)); // Задаём размеры под текст здоровья
+        this._hpTextSprite = new Sprite(new Bitmap(this.width - this.frameThickness * 2, this.statusBarHeight)); // Задаём размеры под текст здоровья
         this._hpTextSprite.bitmap.fontSize = 64; // Размер шрифта
         this._hpTextSprite.bitmap.textColor = '#FFFFFF'; // Цвет текста
         this._hpTextSprite.bitmap.outlineColor = 'rgba(0, 0, 0, 0)'; // Убираем обводку
@@ -242,8 +236,8 @@ class ActorInterface extends Sprite_Actor {
 
         if (this._mainSprite && this._mainSprite.bitmap && this._mainSprite.bitmap.width && this._mainSprite.bitmap.height) {
             // Размеры рамки
-            const frameWidth = this.width - this.frameWidth * 2;
-            const frameHeight = this.height - this.frameWidth * 2;
+            const frameWidth = this.width - this.frameThickness * 2;
+            const frameHeight = this.height - this.frameThickness * 2;
 
             const scaleX = frameWidth / this._mainSprite.bitmap.width;
             const scaleY = frameHeight / this._mainSprite.bitmap.height;
@@ -258,17 +252,13 @@ class ActorInterface extends Sprite_Actor {
         const bitmap = this._hpTextSprite.bitmap;
         bitmap.clear(); // Очищаем только область текста здоровья
         const hpText = `${this._actor.hp}/${this._actor.mhp}`;
-        bitmap.drawText(hpText, 0, 0, this.width - this.frameWidth * 2, this.statusBarHeight, 'right'); // Рисуем здоровье
+        bitmap.drawText(hpText, 0, 0, this.width - this.frameThickness * 2, this.statusBarHeight, 'right'); // Рисуем здоровье
     }
 
     update() {
         super.update();
         this.updateHealthText();
     }
-
-    // updateFrame() {
-    //     Sprite_Battler.prototype.updateFrame.call(this);
-    // }
 }
 
 (function() {
@@ -280,8 +270,8 @@ class ActorInterface extends Sprite_Actor {
         enemies.forEach((enemy) => {
             const sprite = new BossInterface(enemy);
 
-            sprite.x = Graphics.width - sprite.width - OVERLAY_HEIGHT + 15;
-            sprite.y = OVERLAY_HEIGHT + 15;
+            sprite._homeX = Graphics.width - sprite.width - OVERLAY_HEIGHT + 15;
+            sprite._homeY = OVERLAY_HEIGHT + 15;
 
             this._enemySprites.push(sprite);
             this._battleField.addChild(sprite);
@@ -297,8 +287,8 @@ class ActorInterface extends Sprite_Actor {
             const sprite = new ActorInterface(actor);
 
             // Расположим героя в нижнем правом углу
-            sprite.x = Graphics.boxWidth - (sprite.width + 50) * (index + 1); // Отступ от правого края
-            sprite.y = Graphics.boxHeight - sprite.height - 50; // Отступ от нижнего края
+            sprite._homeX = Graphics.boxWidth - (sprite.width + 50) * (index + 1); // Отступ от правого края
+            sprite._homeY = Graphics.boxHeight - sprite.height - 50; // Отступ от нижнего края
 
             this._actorSprites.push(sprite);
             this._battleField.addChild(sprite);
@@ -313,36 +303,11 @@ class ActorInterface extends Sprite_Actor {
         this._battleField.y = 0;
     };
 
-    // Массив для хранения спрайтов здоровья
-    Spriteset_Battle.prototype._hpSprites = [];
-
     // Блокируем стандартное позиционирование спрайтов
-    const _Sprite_Battler_updatePosition = Sprite_Battler.prototype.updatePosition;
-    Sprite_Battler.prototype.updatePosition = function() {
-        // Отключаем стандартное позиционирование
-    };
-
-    // Метод для обновления всех спрайтов здоровья
-    Spriteset_Battle.prototype.updateHealthSprites = function() {
-        this._hpSprites.forEach(entry => entry());
-    };
-
-    // Вызываем обновление здоровья в нужных местах
-    const _Window_BattleStatus_drawItem = Window_BattleStatus.prototype.drawItem;
-    Window_BattleStatus.prototype.drawItem = function(index) {
-        _Window_BattleStatus_drawItem.call(this, index);
-
-        // Обновляем спрайты здоровья при вызове drawItem
-        if (SceneManager._scene._spriteset) {
-            SceneManager._scene._spriteset.updateHealthSprites();
-        }
-    };
-
-    Window_PartyCommand.prototype.initialize = function() {
-        Window_Command.prototype.initialize.call(this, 0, 15);
-        this.openness = 0;
-        this.deactivate();
-    };
+    // const _Sprite_Battler_updatePosition = Sprite_Battler.prototype.updatePosition;
+    // Sprite_Battler.prototype.updatePosition = function() {
+    //     // Отключаем стандартное позиционирование
+    // };
 
     Window_ActorCommand.prototype.initialize = function() {
         Window_Command.prototype.initialize.call(this, 0, 15);
@@ -354,10 +319,5 @@ class ActorInterface extends Sprite_Actor {
     Scene_Battle.prototype.createStatusWindow = function() {
         this._statusWindow = new EmptyStatusWindow(); // Используем заглушку
         this.addWindow(this._statusWindow);
-    };
-
-    Scene_Battle.prototype.commandAttack = function() {
-        BattleManager.inputtingAction().setAttack();
-        this.onEnemyOk();
     };
 })();
